@@ -1,0 +1,19 @@
+This is a loose collection of scripts and code used during my Master Thesis for creating plots and analyzing the measurement results  
+
+The plots.ipynb is the current main file used to create the plots  
+
+The main.py is outdated and was used in the beginning before moving to a notebook
+
+
+the app folder contains helper functions for analyzing the data and also continas the functions to create the plots
+
+the accuracy_check folder was used to test the accuracy by running multiple inferences on the FPGA. 
+
+the images folder is an output folder where some plots are saved
+
+the measurements contains the measurement data$
+
+metadata contains some additional data on resnet operation used for generating the plots
+
+the insn_trace.py was a script once used to map an instructiontrace from the vivado trace to the snitch instruction by mapping the addresses to the corresponding instruction based on a dump of the binary
+

@@ -1,0 +1,94 @@
+INFO: count=1 curr=429525429 p5=429525429 median=429525429 p95=429525429
+
+INFO: Inference timings in us: Init: 547087, First inference: 436959194, Warmup (avg): 4.36959e+08, Inference (avg): 4.29525e+08
+INFO: Note: as the benchmark tool itself affects memory footprint, the following is only APPROXIMATE to the actual memory footprint of the model at runtime. Take the information at your discretion.
+INFO: Memory footprint delta from the start of the tool (MB): init=3.42578 overall=59.0938
+INFO: Profiling Info for Benchmark Initialization:
+============================== Run Order ==============================
+                                     [node type]          [first]        [avg ms]            [%]          [cdf%]          [mem KB]      [times called]  [Name]
+                                 AllocateTensors           40.540          40.540       100.000%        100.000%           128.000              1       AllocateTensors/0
+
+============================== Top by Computation Time ==============================
+                                     [node type]          [first]        [avg ms]            [%]          [cdf%]          [mem KB]      [times called]  [Name]
+                                 AllocateTensors           40.540          40.540       100.000%        100.000%           128.000              1       AllocateTensors/0
+
+Number of nodes executed: 1
+============================== Summary by node type ==============================
+                                     [Node type]          [count]         [avg ms]          [avg %]         [cdf %]       [mem KB]      [times called]
+                                 AllocateTensors                1           40.540         100.000%        100.000%        128.000              1
+
+Timings (microseconds): count=1 curr=40540
+Memory (bytes): count=0
+1 nodes observed
+
+
+
+INFO: Operator-wise Profiling Info for Regular Benchmark Runs:
+============================== Run Order ==============================
+                                     [node type]          [first]        [avg ms]            [%]          [cdf%]          [mem KB]      [times called]  [Name]
+                                       TRANSPOSE          181.282         181.282         0.042%          0.042%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.conv.Conv2d_conv1;]:0
+                                             PAD          132.800         132.800         0.031%          0.073%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.conv.Conv2d_conv1;1]:1
+                                         CONV_2D        24055.075       24055.075         5.601%          5.674%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.activation.ReLU_relu;;torchvision.models.res2
+                                           PADV2          739.615         739.615         0.172%          5.846%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.pooling.MaxPool2d_maxpool;]:3
+                                     MAX_POOL_2D         1633.476        1633.476         0.380%          6.226%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.pooling.MaxPool2d_maxpool;1]:4
+                                         CONV_2D        25831.894       25831.894         6.014%         12.241%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer1/torchvision.mode5
+                                         CONV_2D        25754.247       25754.247         5.996%         18.237%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer1/torchvision.mode6
+                                             ADD          277.107         277.107         0.065%         18.301%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer1/torchvision.mode7
+                                         CONV_2D        26150.216       26150.216         6.088%         24.390%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer1/torchvision.mode8
+                                         CONV_2D        26078.088       26078.088         6.072%         30.462%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer1/torchvision.mode9
+                                             ADD          341.477         341.477         0.080%         30.541%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer1/torchvision.mode0
+                                             PAD          186.721         186.721         0.043%         30.585%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer2/torchvision.mode1
+                                         CONV_2D        13432.477       13432.477         3.127%         33.712%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer2/torchvision.mode2
+                                         CONV_2D        27544.299       27544.299         6.413%         40.125%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer2/torchvision.mode3
+                                         CONV_2D         1179.452        1179.452         0.275%         40.400%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer2/torchvision.mode4
+                                             ADD          165.617         165.617         0.039%         40.438%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer2/torchvision.mode5
+                                         CONV_2D        27300.946       27300.946         6.356%         46.795%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer2/torchvision.mode6
+                                         CONV_2D        27388.824       27388.824         6.377%         53.171%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer2/torchvision.mode7
+                                             ADD          155.811         155.811         0.036%         53.208%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer2/torchvision.mode8
+                                             PAD           84.810          84.810         0.020%         53.227%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer3/torchvision.mode9
+                                         CONV_2D        13552.233       13552.233         3.155%         56.383%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer3/torchvision.mode0
+                                         CONV_2D        27197.970       27197.970         6.332%         62.715%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer3/torchvision.mode1
+                                         CONV_2D         1535.250        1535.250         0.357%         63.073%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer3/torchvision.mode2
+                                             ADD           95.482          95.482         0.022%         63.095%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer3/torchvision.mode3
+                                         CONV_2D        27188.577       27188.577         6.330%         69.425%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer3/torchvision.mode4
+                                         CONV_2D        27065.260       27065.260         6.302%         75.727%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer3/torchvision.mode5
+                                             ADD           77.278          77.278         0.018%         75.745%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer3/torchvision.mode6
+                                             PAD           48.121          48.121         0.011%         75.756%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer4/torchvision.mode7
+                                         CONV_2D        14490.678       14490.678         3.374%         79.130%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer4/torchvision.mode8
+                                         CONV_2D        28807.640       28807.640         6.707%         85.837%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer4/torchvision.mode9
+                                         CONV_2D         1634.069        1634.069         0.380%         86.217%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer4/torchvision.mode0
+                                             ADD           58.692          58.692         0.014%         86.231%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer4/torchvision.mode1
+                                         CONV_2D        28516.721       28516.721         6.639%         92.870%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer4/torchvision.mode2
+                                         CONV_2D        30291.661       30291.661         7.053%         99.923%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer4/torchvision.mode3
+                                             ADD           42.058          42.058         0.010%         99.933%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer4/torchvision.mode4
+                                             SUM           16.201          16.201         0.004%         99.937%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.pooling.AdaptiveAvgPool2d_avgpool;]:35
+                                 FULLY_CONNECTED          271.993         271.993         0.063%        100.000%             0.000              1       [StatefulPartitionedCall:0]:36
+
+============================== Top by Computation Time ==============================
+                                     [node type]          [first]        [avg ms]            [%]          [cdf%]          [mem KB]      [times called]  [Name]
+                                         CONV_2D        30291.661       30291.661         7.053%          7.053%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer4/torchvision.mode3
+                                         CONV_2D        28807.640       28807.640         6.707%         13.760%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer4/torchvision.mode9
+                                         CONV_2D        28516.721       28516.721         6.639%         20.399%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer4/torchvision.mode2
+                                         CONV_2D        27544.299       27544.299         6.413%         26.812%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer2/torchvision.mode3
+                                         CONV_2D        27388.824       27388.824         6.377%         33.189%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer2/torchvision.mode7
+                                         CONV_2D        27300.946       27300.946         6.356%         39.546%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer2/torchvision.mode6
+                                         CONV_2D        27197.970       27197.970         6.332%         45.878%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer3/torchvision.mode1
+                                         CONV_2D        27188.577       27188.577         6.330%         52.208%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer3/torchvision.mode4
+                                         CONV_2D        27065.260       27065.260         6.302%         58.510%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer3/torchvision.mode5
+                                         CONV_2D        26150.216       26150.216         6.088%         64.598%             0.000              1       [torchvision.models.resnet.ResNet/torch.nn.modules.container.Sequential_layer1/torchvision.mode8
+
+Number of nodes executed: 37
+============================== Summary by node type ==============================
+                                     [Node type]          [count]         [avg ms]          [avg %]         [cdf %]       [mem KB]      [times called]
+                                         CONV_2D               20       424995.562          98.950%         98.950%          0.000             20
+                                     MAX_POOL_2D                1         1633.476           0.380%         99.331%          0.000              1
+                                             ADD                8         1213.522           0.283%         99.613%          0.000              8
+                                           PADV2                1          739.615           0.172%         99.785%          0.000              1
+                                             PAD                4          452.452           0.105%         99.891%          0.000              4
+                                 FULLY_CONNECTED                1          271.993           0.063%         99.954%          0.000              1
+                                       TRANSPOSE                1          181.282           0.042%         99.996%          0.000              1
+                                             SUM                1           16.201           0.004%        100.000%          0.000              1
+
+Timings (microseconds): count=1 curr=429504118
+Memory (bytes): count=0
+37 nodes observed
