@@ -171,6 +171,8 @@ class Model_Sankey:
                 labels[i] = "GEMM"
             elif label == "data_in_copy_map":
                 labels[i] = "IOMMU page map"
+            elif label == "offload_wait":
+                labels[i] = "Device work"
         x = [node.x for node in self.nodes]
         y = [node.y for node in self.nodes]
         node_colors = [node.color for node in self.nodes]

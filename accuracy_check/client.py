@@ -14,7 +14,7 @@ from pathlib import Path
 from torchvision import datasets
 import numpy as np
 
-SERVER_ADDRESS = "172.31.182.94"
+SERVER_ADDRESS = "172.31.182.93"
 SERVER_INPUT_FOLDER = "/root/resnet/data/images"
 SERVER_OUTPUT_FOLDER = "/root/resnet/data/outputs"
 
@@ -50,22 +50,24 @@ def main():
     with SCPClient(ssh.get_transport()) as scp:
         # First upload to a tmp file so that we can rename it later which is atomic
 
-        number_of_images = 20
+        number_of_images = 1
         # Select at random
         random_indices = np.random.choice(len(dataset.samples), number_of_images, replace=False)
 
         images = [dataset.samples[i] for i in random_indices]
-        for image in images:
+        # print(images)
+        for image, id in images:
+                image = Path(image)
                 print(f"Processing image: {image}")
                 resized = resize_image(image)
                 resized.save(BMP_FOLDER + f"/{image.stem}.bmp", format='BMP')
-                resized_image_path = BMP_FOLDER + f"/{image.stem}.bmp"
+                resized_image_path = Path(BMP_FOLDER + f"/{image.stem}.bmp")
                 resized_image = resized_image_path.name
                 print(f"Sent image to {SERVER_INPUT_FOLDER}/{resized_image}.tmp")
                 scp.put(resized_image_path, SERVER_INPUT_FOLDER + f"/{resized_image}.tmp")
                 ssh.exec_command(f"mv {SERVER_INPUT_FOLDER}/{resized_image}.tmp {SERVER_INPUT_FOLDER}/{resized_image}")
                 print("Waiting for results...")
-                time.sleep(50)
+                time.sleep(60)
                 outputs_to_retrieve.append(resized_image_path.stem)
                 for otr in outputs_to_retrieve:
                     try:

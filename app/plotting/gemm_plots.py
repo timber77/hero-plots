@@ -1,3 +1,4 @@
+import math
 from xml.parsers.expat import model
 import plotly.graph_objects as go
 from pathlib import Path
@@ -182,7 +183,7 @@ def plot_gemm_times_with_speedup_and_timestamps(log_file_data: pd.DataFrame, tit
         fig.add_trace(go.Bar(
             x=x,
             y=log_file_data["data_in_copy"]+log_file_data["data_out_copy"],
-            name='data copy',
+            name='data copy (in/out)',
             offsetgroup="acc",
         ))
 
@@ -207,7 +208,7 @@ def plot_gemm_times_with_speedup_and_timestamps(log_file_data: pd.DataFrame, tit
     fig.add_trace(go.Bar(
         x=x,
         y=log_file_data["offload_wait"],
-        name='offload wait',
+        name='device computation',
         offsetgroup="acc",
     ))
     remainder -= log_file_data["offload_wait"]
@@ -264,7 +265,7 @@ def plot_gemm_times_with_speedup_and_timestamps_triple(log_file_data: pd.DataFra
         fig.add_trace(go.Bar(
             x=x,
             y=log_file_data["data_in_copy"]+log_file_data["data_out_copy"],
-            name='data copy',
+            name='data copy (in/out)',
             offsetgroup="acc",
         ))
 
@@ -289,7 +290,7 @@ def plot_gemm_times_with_speedup_and_timestamps_triple(log_file_data: pd.DataFra
     fig.add_trace(go.Bar(
         x=x,
         y=log_file_data["offload_wait"],
-        name='offload wait',
+        name='device computation',
         offsetgroup="acc",
     ))
     remainder -= log_file_data["offload_wait"]
@@ -336,7 +337,7 @@ def plot_gemm_times_with_speedup_and_timestamps_triple(log_file_data: pd.DataFra
     fig.add_trace(go.Bar(
         x=x,
         y=log_file_data_iommu["offload_wait"],
-        name='offload wait',
+        name='device computation',
         offsetgroup="iommu",
         showlegend=False,
         marker_color=default_colors[3]
@@ -542,7 +543,7 @@ def plot_gemm_device_cycles(data:pd.DataFrame, title="GEMM Device Cycles")-> go.
     return fig
 
 
-def gemm_get_arithmetic_intensity(m,n,k, float_size, tile_m=32, tile_n=48, tile_k=64):
+def gemm_get_arithmetic_intensity(m,n,k, float_size, tile_m=32, tile_n=48, tile_k=64, with_c_load=True):
 
     # Calculate the number of tiles in each dimension
     num_tiles_m = (m + tile_m - 1) // tile_m
@@ -550,11 +551,12 @@ def gemm_get_arithmetic_intensity(m,n,k, float_size, tile_m=32, tile_n=48, tile_
     num_tiles_k = (k + tile_k - 1) // tile_k
 
     # Calculate the total number of operations
-    total_operations = m * n * k
+    total_operations = m * n * k * 2  # Each multiplication is followed by an addition
 
     # Calculate the total number of memory accesses
-    total_memory_accesses = (m*n*2 + m*k*num_tiles_n + n*k*num_tiles_m) * float_size
-
+    total_memory_accesses = (m*n + m*k*num_tiles_n + n*k*num_tiles_m) * float_size
+    if with_c_load:
+        total_memory_accesses += m*n * float_size  # Load C matrix if needed
 
     # Calculate the arithmetic intensity
     arithmetic_intensity = total_operations / total_memory_accesses
@@ -574,14 +576,44 @@ def plot_gemm_roofline(log_file_data: pd.DataFrame, float_size=8, title="GEMM Ro
 
     # theoretical_initial_load_time = np.minimum(np.ceil(log_file_data["m"] / 32)*(32*64+48*64+32*48)*float_size/8, (log_file_data["dma"]+log_file_data["issue"]))  # in cycles
     # print(f"Theoretical initial load time: {theoretical_initial_load_time} cycles")
+    flops_required = 2*(log_file_data["m"] * log_file_data["n"] * log_file_data["k"])
     fig.add_trace(go.Scatter(
-        x=gemm_get_arithmetic_intensity(log_file_data["m"], log_file_data["n"], log_file_data["k"], float_size=float_size),  # Convert to MFlops
-        y=(log_file_data["m"] * log_file_data["n"] * log_file_data["k"]) / (log_file_data["tot"]),
+        x=gemm_get_arithmetic_intensity(log_file_data["m"], log_file_data["n"], log_file_data["k"], float_size=float_size, with_c_load=False), 
+        y=flops_required / (log_file_data["tot"]),
         mode="markers",
         name="On Device Performance",
         hovertext=hovertext,
-        marker=dict(size=15, symbol='triangle-up')
+        marker=dict(size=15, symbol='triangle-up'),
     ))
+    max_performance = np.max(flops_required / (log_file_data["tot"]))
+    tot_512 = log_file_data.loc[log_file_data["m"] == 512, "tot"]
+    if not tot_512.empty:
+        y_value = (flops_required[log_file_data["m"] == 512] / tot_512.iloc[0])
+        print(y_value)
+        fig.add_annotation(
+            x=math.log10(gemm_get_arithmetic_intensity(512, 512, 512, float_size=float_size, with_c_load=False)),
+            y=math.log10(y_value),
+            text=f"FPU utilization: {max_performance/(16*(8/float_size))*100:.1f}% at 512x512x512",
+            showarrow=True,
+            xanchor="right",
+        )
+
+    # fig.add_trace(go.Scatter(
+    #     x=gemm_get_arithmetic_intensity(log_file_data["m"], log_file_data["n"], log_file_data["k"], float_size=float_size, with_c_load=False), 
+    #     y=flops_required / (log_file_data["dev_time"]*30e6),
+    #     mode="markers",
+    #     name="With offloading",
+    #     hovertext=hovertext,
+    #     marker=dict(size=15, symbol='triangle-up')
+    # ))
+    # fig.add_trace(go.Scatter(
+    #     x=gemm_get_arithmetic_intensity(log_file_data["m"], log_file_data["n"], log_file_data["k"], float_size=float_size, with_c_load=False),
+    #     y=flops_required / (log_file_data["host_time"]*50e6),
+    #     mode="markers",
+    #     name="Host",
+    #     hovertext=hovertext,
+    #     marker=dict(size=15, symbol='triangle-up')
+    # ))
 
     # fig.add_trace(go.Scatter(
     #     x=gemm_get_arithmetic_intensity(log_file_data["m"], log_file_data["n"], log_file_data["k"], float_size=float_size),  # Convert to MFlops
@@ -592,7 +624,7 @@ def plot_gemm_roofline(log_file_data: pd.DataFrame, float_size=8, title="GEMM Ro
     # ))
 
 
-    peak_performance = 8*(8/float_size) # fmadd/cycle
+    peak_performance = 2*8*(8/float_size) # fmadd/cycle
     bandwidth = 8 # B/cycle
 
     ai_limit = gemm_get_arithmetic_intensity(10000,10000,10000,float_size=float_size) + 0.5  # Add a small margin to the limit
@@ -617,18 +649,156 @@ def plot_gemm_roofline(log_file_data: pd.DataFrame, float_size=8, title="GEMM Ro
     #     line=dict(dash='dash')
     # ))
 
+    
     fig.update_layout(
         title=title,
-        xaxis_title="Arithmetic Intensity (fmadd / DMA Byte transferred)",
-        yaxis_title="Performance (fmadd / cycle)",
-        xaxis=dict(type="linear", range=[0, ai_limit]),
-        yaxis=dict(type="linear", range=[0, peak_performance+1]),
+        xaxis_title="Arithmetic Intensity (FLOPs / DMA Byte transferred)",
+        yaxis_title="Performance (FLOPs / cycle)",
+        xaxis=dict(type="log"),
+        yaxis=dict(type="log"),
+        # xaxis=dict(type="linear", range=[0, ai_limit]),
+        # yaxis=dict(type="linear", range=[0, peak_performance+1]),
 
+        showlegend=True
+    )
+    # max_performance = np.max(flops_required / (log_file_data["tot"]))
+
+    # fig.add_annotation(text=f"FPU utilization: {max_performance/(16*(8/float_size))*100:.1f}%", 
+    #                 align='left',
+    #                 showarrow=False,
+    #                 xref='paper',
+    #                 yref='paper',
+    #                 x=1.25,
+    #                 y=0.7,
+    #                 bordercolor='black',
+    #                 borderwidth=1)
+
+
+    fig.update_yaxes(minorloglabels='none', exponentformat="power")
+    if float_size == 4:
+        fig.update_xaxes(minorloglabels='none', exponentformat="power", range=[0, 1])
+    else:
+        fig.update_xaxes(minorloglabels='none', exponentformat="power", range=[-0.2, 0.72])
+
+
+    return fig
+
+
+
+
+
+def plot_gemm_roofline_doubletype(log_file_data64: pd.DataFrame, log_file_data32:pd.DataFrame,float_size64=8,float_size32=4, title="GEMM Roofline on device") -> go.Figure:
+    fig = go.Figure()
+    hovertext = None
+    try:
+        hovertext = "m:" + log_file_data64['m'].astype(str) + "-n:" + log_file_data64['n'].astype(str) + "-k:" + log_file_data64['k'].astype(str) + "-tA:" + log_file_data64["transa"].astype(str) + "-tB:" + log_file_data64["transb"].astype(str)
+    except KeyError:
+        try:
+            hovertext = "m:" + log_file_data64['m'].astype(str) + "-n:" + log_file_data64['n'].astype(str) + "-k:" + log_file_data64['k'].astype(str)
+        except KeyError:
+            hovertext = log_file_data64.index.astype(str)
+
+    # theoretical_initial_load_time = np.minimum(np.ceil(log_file_data["m"] / 32)*(32*64+48*64+32*48)*float_size/8, (log_file_data["dma"]+log_file_data["issue"]))  # in cycles
+    # print(f"Theoretical initial load time: {theoretical_initial_load_time} cycles")
+    flops_required = 2*(log_file_data64["m"] * log_file_data64["n"] * log_file_data64["k"])
+    fig.add_trace(go.Scatter(
+        x=gemm_get_arithmetic_intensity(log_file_data64["m"], log_file_data64["n"], log_file_data64["k"], float_size=float_size64, with_c_load=False), 
+        y=flops_required / (log_file_data64["tot"]),
+        mode="markers",
+        name="FP64",
+        hovertext=hovertext,
+        marker=dict(size=15, symbol='triangle-up'),
+    ))
+    max_performance = np.max(flops_required / (log_file_data64["tot"]))
+    tot_512 = log_file_data64.loc[log_file_data64["m"] == 512, "tot"]
+    if not tot_512.empty:
+        y_value = (flops_required[log_file_data64["m"] == 512] / tot_512.iloc[0])
+        print(y_value)
+        fig.add_annotation(
+            x=math.log10(gemm_get_arithmetic_intensity(512, 512, 512, float_size=float_size64, with_c_load=False)),
+            y=math.log10(y_value),
+            text=f"512x512x512, FPU utilization: <b>{max_performance/(16*(8/float_size64))*100:.1f}%</b>",
+            showarrow=True,
+            xanchor="right",
+        )
+
+    peak_performance64 = 2*8*(8/float_size64) # fmadd/cycle
+    peak_performance32 = 2*8*(8/float_size32) # fmadd/cycle
+    bandwidth = 8 # B/cycle
+
+    ai_limit = gemm_get_arithmetic_intensity(10000,10000,10000,float_size=float_size32) + 0.5  # Add a small margin to the limit
+
+    x = np.linspace(0, ai_limit, 1000)
+    y64 = np.minimum(x * bandwidth, peak_performance64)
+
+    fig.add_trace(go.Scatter(
+        x=x,
+        y=y64,
+        mode="lines",
+        name=f"Roofline {bandwidth} B / cycle (FP64)",
+        showlegend=False
+        # line=dict(color='red')
+    ))
+    
+
+    #float32 axis
+    flops_required32 = 2*(log_file_data32["m"] * log_file_data32["n"] * log_file_data32["k"])
+    fig.add_trace(go.Scatter(
+        x=gemm_get_arithmetic_intensity(log_file_data32["m"], log_file_data32["n"], log_file_data32["k"], float_size=float_size32, with_c_load=False), 
+        y=flops_required32 / (log_file_data32["tot"]),
+        mode="markers",
+        name="FP32",
+        hovertext=hovertext,
+        marker=dict(size=15, symbol='circle'),
+    ))
+    max_performance = np.max(flops_required32 / (log_file_data32["tot"]))
+    tot_512 = log_file_data32.loc[log_file_data32["m"] == 512, "tot"]
+    if not tot_512.empty:
+        y_value = (flops_required32[log_file_data32["m"] == 512] / tot_512.iloc[0])
+        print(y_value)
+        fig.add_annotation(
+            x=math.log10(gemm_get_arithmetic_intensity(512, 512, 512, float_size=float_size32, with_c_load=False)),
+            y=math.log10(y_value),
+            text=f"512x512x512, FPU utilization: <b>{max_performance/(16*(8/float_size32))*100:.1f}%</b>",
+            showarrow=True,
+            xanchor="right",
+        )
+
+
+
+
+
+
+    y32 = np.minimum(x * bandwidth, peak_performance32)
+    fig.add_trace(go.Scatter(
+        x=x,
+        y=y32,
+        mode="lines",
+        name=f"Roofline {bandwidth} B / cycle (FP32)",
+        showlegend=False,
+    ))
+
+    
+    fig.update_layout(
+        title=title,
+        xaxis_title="Arithmetic Intensity (FLOPs / DMA Byte transferred)",
+        yaxis_title="Performance (FLOPs / cycle)",
+        xaxis=dict(type="log"),
+        yaxis=dict(type="log"),
+        # xaxis=dict(type="linear", range=[0, ai_limit]),
+        # yaxis=dict(type="linear", range=[0, peak_performance+1]),
         showlegend=True
     )
 
 
+    fig.update_yaxes(minorloglabels='none', exponentformat="power")
+
+    fig.update_xaxes(minorloglabels='none', exponentformat="power", range=[-0.2, 1])
+
+
+
     return fig
+
 
 def plot_gemm_percentage(log_file_data: pd.DataFrame, title="GEMM Percentage") -> go.Figure:
     fig = go.Figure()
